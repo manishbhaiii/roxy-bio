@@ -54,16 +54,26 @@ const statusColors: Record<string, string> = {
 
 // Helper: Convert Hex to RGB for manual opacity
 const hexToRgb = (hex: string) => {
-    let c: any;
-    if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-        c = hex.substring(1).split('');
-        if (c.length == 3) {
-            c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-        }
-        c = '0x' + c.join('');
-        return [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',');
+    hex = hex.replace(/^#/, '');
+
+    // Handle 8-digit hex (RRGGBBAA) - strip alpha
+    if (hex.length === 8) {
+        hex = hex.substring(0, 6);
     }
-    return '255, 255, 255'; // Fallback
+
+    // Handle 3-digit hex (RGB)
+    if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+    }
+
+    const bigint = parseInt(hex, 16);
+    if (isNaN(bigint)) return '255, 255, 255'; // Fallback
+
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+
+    return `${r}, ${g}, ${b}`;
 };
 
 
@@ -210,6 +220,7 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                     <div
                         className="w-full rounded-[30px] overflow-hidden"
                         style={{
+                            // Ensure this uses the themeRgb variable derived from config
                             backgroundColor: `rgba(${themeRgb}, 0.25)`,
                             backdropFilter: "blur(12px)",
                         }}
@@ -217,7 +228,8 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                         {validActivities.map((act, index) => (
                             <div
                                 key={index + act.name}
-                                className={`w-full p-3 flex items-center gap-3 relative ${index !== validActivities.length - 1 ? 'border-b border-white/5' : ''}`}
+                                // Removed border-b border-white/5
+                                className="w-full p-3 flex items-center gap-3 relative"
                             >
                                 {/* Middle: Text Info (Centered vertically) */}
                                 <div className="flex-1 min-w-0 flex flex-col justify-center pl-4">
