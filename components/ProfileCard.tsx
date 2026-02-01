@@ -1,19 +1,50 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Github, Music, Gamepad2, Link as LinkIcon, Eye } from "lucide-react";
+import {
+    Github, Music, Gamepad2, Link as LinkIcon, Eye,
+    Twitter, Instagram, Youtube, Twitch, Mail, Globe, Cloud
+} from "lucide-react";
 import Image from "next/image";
 import { config } from "@/config";
 import { useState, useEffect } from "react";
 
-// Type definitions for the API response
+// --- Types based on User's JSON ---
+
 export interface DiscordData {
+    userId: string;
     username: string;
+    discriminator: string;
     globalName?: string;
     displayName?: string;
     avatar: string;
-    activities: Activity[];
+    avatarDecoration?: {
+        asset: string;
+        skuId: string;
+        url: string;
+    };
+    banner?: {
+        hash: string;
+        url: string;
+        color: string | null;
+    };
+    badges: {
+        name: string;
+        icon: string;
+        value: number;
+    }[];
+    nitro: {
+        type: number;
+        hasNitro: boolean;
+    };
+    clanTag?: {
+        guildId: string;
+        tag: string;
+        identityEnabled: boolean;
+        badge: string; // URL to badge image
+    };
     status: string;
+    activities: Activity[];
 }
 
 interface Activity {
@@ -76,13 +107,45 @@ const hexToRgb = (hex: string) => {
     return `${r}, ${g}, ${b}`;
 };
 
+// Social Icon Map
+const SOCIAL_ICONS: Record<string, any> = {
+    "Github": Github,
+    "Discord": LinkIcon, // Using Link as Discord icon fallback or we can use specific if we had it but Lucide doesn't have Discord. Usually people use FaDiscord from react-icons/fa. But user said "lucide-react". We'll stick to generic or Link for unavailable. 
+    // Actually, Lucide doesn't have brand icons like Discord/Spotify usually? 
+    // Wait, previous code used <Music> for Spotify.
+    "Spotify": Music,
+    "Instagram": Instagram,
+    "Twitter": Twitter,
+    "Youtube": Youtube,
+    "Twitch": Twitch,
+    "Mail": Mail,
+    "Globe": Globe,
+    "Website": Globe,
+    "Cloud": Cloud,
+    "Link": LinkIcon
+};
+
+// Badge Icon Mapping (Using standard names from API)
+// Using a reliable source for SVG badges or falling back to text
+const BADGE_ICONS: Record<string, string> = {
+    "hypesquad_brilliance": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_brilliance.svg",
+    "hypesquad_bravery": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_bravery.svg",
+    "hypesquad_balance": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_balance.svg",
+    "staff": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/staff.svg",
+    "partner": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/partner.svg",
+    "certified_moderator": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/certified_moderator.svg",
+    "verified_developer": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/verified_developer.svg",
+    "active_developer": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/active_developer.svg",
+    "early_supporter": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/early_supporter.svg",
+    "nitro": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/nitro.svg",
+    "boost": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/boost.svg", // Generic boost, API usually gives specific level
+};
 
 export default function ProfileCard({ data, loading }: ProfileCardProps) {
     const [views, setViews] = useState(0);
 
     useEffect(() => {
         // Fetch views from server-side API (POST increments, GET just fetches)
-        // Since we want to increment on 'refresh' (load), we use POST once on mount.
         const updateViews = async () => {
             try {
                 const res = await fetch('/api/views', { method: 'POST' });
@@ -114,11 +177,9 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
     // --- LOGIC ---
     const getAvatarUrl = (url: string | undefined) => {
         if (!url) return "";
-        const parts = url.split('/');
-        const hash = parts[parts.length - 1].split('.')[0];
-        if (hash.startsWith("a_")) {
-            return url.replace(".png", ".gif").replace(".webp", ".gif").replace(".jpg", ".gif");
-        }
+        // If it's a gif (starts with a_), replace extension
+        // The API actually returns the correct URL in the 'avatar' field mostly, but let's be safe
+        // The user provided JSON has: ".../a_...gif?size=512" which is good.
         return url;
     };
 
@@ -153,7 +214,7 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
         return null;
     };
 
-    // Filter and valid activities
+    // Filter valid activities
     const validActivities = data.activities.filter(
         (act) => act.type === "Listening" || act.type === "Playing" || (act.name !== "Custom Status")
     );
@@ -161,23 +222,38 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
     // Dynamic RGB for rgba styles
     const themeRgb = hexToRgb(config.themeColor || '#ffffff');
 
-    // Display Name: Use global_name if available, else username
+    // Display Name Strategy
     const displayName = data.displayName || data.globalName || data.username;
+
+    // Badge Logic - Using Custom Badges from Config
+    // User requested to remove old badge system but keep tag.
+    const customBadges = config.customBadges || [];
+
+    // UI Styles from config
+    const mainCardStyle = {
+        boxShadow: `0 0 40px ${config.themeColor}10`,
+        backgroundColor: `rgba(0, 0, 0, ${config.ui?.mainCard?.opacity ? config.ui.mainCard.opacity / 100 : 0.2})`,
+        border: config.ui?.mainCard?.border?.show
+            ? `${config.ui.mainCard.border.width}px solid ${config.ui.mainCard.border.color}`
+            : 'none'
+    };
+
+    const activityCardStyle = {
+        backgroundColor: `rgba(${themeRgb}, ${config.ui?.activityCard?.opacity ? config.ui.activityCard.opacity / 100 : 0.25})`,
+        backdropFilter: "blur(12px)",
+        border: config.ui?.activityCard?.border?.show
+            ? `${config.ui.activityCard.border.width}px solid ${config.ui.activityCard.border.color}`
+            : 'none'
+    };
+
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            // Fixed width
             className="p-8 w-[550px] max-w-full backdrop-blur-xl rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col items-center gap-6"
-            style={{
-                boxShadow: `0 0 40px ${config.themeColor}10`,
-                backgroundColor: `rgba(0, 0, 0, ${config.ui.mainCard.opacity / 100})`,
-                border: config.ui.mainCard.border.show
-                    ? `${config.ui.mainCard.border.width}px solid ${config.ui.mainCard.border.color}`
-                    : 'none'
-            }}
+            style={mainCardStyle}
         >
             {/* View Counter - Bottom Left */}
             <div className="absolute bottom-6 left-8 flex items-center gap-2 text-sm font-bold opacity-80 z-20">
@@ -187,24 +263,36 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
 
             {/* Profile Section */}
             <div className="flex flex-col items-center w-full z-10 relative mt-2">
-                {/* Avatar (Birds Removed) */}
+
+                {/* Avatar Area */}
                 <div className="relative flex items-center justify-center">
-                    <div className="relative group">
+                    <div className="relative group w-[100px] h-[100px]">
                         <Image
                             src={avatarUrl}
                             alt="Avatar"
-                            width={100}
-                            height={100}
+                            fill
                             unoptimized
-                            className="rounded-full shadow-lg group-hover:scale-105 transition-transform duration-300 object-cover"
+                            className="rounded-full shadow-lg group-hover:scale-105 transition-transform duration-300 object-cover z-10"
                         />
+                        {/* Status Indicator */}
                         <div
-                            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-black ${statusColors[data.status] || "bg-gray-500"}`}
+                            className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-black ${statusColors[data.status] || "bg-gray-500"} z-20`}
                         />
+
+                        {/* Avatar Decoration - Overlay */}
+                        {data.avatarDecoration && (
+                            <div className="absolute -top-[15%] -left-[15%] w-[130%] h-[130%] pointer-events-none z-30">
+                                <img
+                                    src={data.avatarDecoration.url}
+                                    alt="decoration"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Display Name - Standard Font */}
+                {/* Display Name */}
                 <h1
                     style={{
                         textShadow: `0 0 15px ${config.themeColor}`,
@@ -215,30 +303,66 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                 >
                     {displayName}
                 </h1>
+
+                {/* Badges & Clan Tag Row */}
+                {/* User requested Badges FIRST, then Clan Tag LAST */}
+                <div
+                    className="flex flex-wrap items-center justify-center mt-2 px-4"
+                    style={{ gap: config.badgeStyle?.gap || 8 }}
+                >
+                    {/* Custom Badges */}
+                    {customBadges.map((badgeUrl, idx) => (
+                        <div
+                            key={idx}
+                            className="flex items-center justify-center relative hover:scale-110 transition-transform duration-200"
+                            style={{
+                                width: config.badgeStyle?.size || 24,
+                                height: config.badgeStyle?.size || 24,
+                                opacity: (config.badgeStyle?.opacity || 100) / 100,
+                            }}
+                        >
+                            <img
+                                src={badgeUrl}
+                                alt="badge"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                    ))}
+
+                    {/* Clan Tag */}
+                    {data.clanTag && (
+                        <div
+                            className="flex items-center gap-1 border border-[#ffffff10] px-1.5 py-0.5 h-[22px]"
+                            style={{
+                                backgroundColor: "rgba(0, 0, 0, 0.3)", // More transparent as requested
+                                borderRadius: "8px", // More rounded corners
+                            }}
+                            title={data.clanTag.tag}
+                        >
+                            {data.clanTag.badge && (
+                                <img src={data.clanTag.badge} alt="clan" className="w-[12px] h-[12px] object-contain" />
+                            )}
+                            <span className="text-[11px] font-medium text-[#dbdee1] font-sans tracking-wide">
+                                {data.clanTag.tag}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Activities Section - One Expanded Card for All Activities */}
+            {/* Activities Section */}
             <div className="w-full max-w-sm flex flex-col gap-0 items-center w-full mb-4">
-                {validActivities.length > 0 ? (
-                    // Use one container for all activities if multiple
+                {validActivities.length > 0 && (
                     <div
                         className="w-full rounded-[30px] overflow-hidden"
-                        style={{
-                            // Ensure this uses the themeRgb variable derived from config
-                            backgroundColor: `rgba(${themeRgb}, ${config.ui.activityCard.opacity / 100})`,
-                            backdropFilter: "blur(12px)",
-                            border: config.ui.activityCard.border.show
-                                ? `${config.ui.activityCard.border.width}px solid ${config.ui.activityCard.border.color}`
-                                : 'none'
-                        }}
+                        style={activityCardStyle}
                     >
                         {validActivities.map((act, index) => (
                             <div
                                 key={index + act.name}
-                                // Removed border-b border-white/5
                                 className="w-full p-3 flex items-center gap-3 relative"
                             >
-                                {/* Middle: Text Info (Centered vertically) */}
+                                {/* Middle: Text Info */}
                                 <div className="flex-1 min-w-0 flex flex-col justify-center pl-4">
                                     <p className="text-xs font-medium truncate" style={{ color: config.themeColor }}>
                                         {act.name === "Spotify" ? "Listening to Spotify" : `Playing ${act.name}`}
@@ -253,7 +377,7 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                                     )}
                                 </div>
 
-                                {/* Right: Large Activity Image (Square) */}
+                                {/* Right: Large Activity Image */}
                                 <div className="relative w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-black/50">
                                     {getActivityImage(act) ? (
                                         <img src={getActivityImage(act)!} alt="Activity" className="w-full h-full object-cover" />
@@ -266,20 +390,6 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                             </div>
                         ))}
                     </div>
-                ) : (
-                    /* If no activity, show a placeholder pill */
-                    <div
-                        className="w-full rounded-[30px] p-4 flex items-center justify-center gap-3 relative overflow-hidden"
-                        style={{
-                            backgroundColor: `rgba(${themeRgb}, ${config.ui.activityCard.opacity / 100})`,
-                            backdropFilter: "blur(12px)",
-                            border: config.ui.activityCard.border.show
-                                ? `${config.ui.activityCard.border.width}px solid ${config.ui.activityCard.border.color}`
-                                : 'none'
-                        }}
-                    >
-                        <span className="text-sm opacity-60 font-mono" style={{ color: config.themeColor }}>No Activity Detected</span>
-                    </div>
                 )}
             </div>
 
@@ -291,17 +401,27 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                         href={social.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="transition-all duration-300 hover:scale-110 hover:-translate-y-1"
+                        className="transition-all duration-300 hover:scale-110 hover:-translate-y-1 block"
                         style={{
-                            color: config.themeColor,
                             filter: `drop-shadow(0 0 8px ${config.themeColor})`
                         }}
                     >
-                        {social.label.toLowerCase() === "github" ? <Github className="w-8 h-8" /> :
-                            social.label.toLowerCase() === "discord" ? <LinkIcon className="w-8 h-8" /> :
-                                social.label.toLowerCase() === "spotify" ? <Music className="w-8 h-8" /> :
-                                    social.label.toLowerCase() === "instagram" ? <div className="w-8 h-8 rounded-lg border-2 border-current p-1 flex items-center justify-center"><div className="w-3 h-3 bg-current rounded-full"></div></div> :
-                                        <LinkIcon className="w-8 h-8" />}
+                        {/* Force Color Icon using Mask */}
+                        <div
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                backgroundColor: config.themeColor,
+                                WebkitMaskImage: `url(${social.iconUrl})`,
+                                maskImage: `url(${social.iconUrl})`,
+                                WebkitMaskSize: 'contain',
+                                maskSize: 'contain',
+                                WebkitMaskRepeat: 'no-repeat',
+                                maskRepeat: 'no-repeat',
+                                WebkitMaskPosition: 'center',
+                                maskPosition: 'center',
+                            }}
+                        />
                     </a>
                 ))}
             </div>

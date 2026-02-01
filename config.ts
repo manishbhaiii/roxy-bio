@@ -23,12 +23,25 @@ export const config = {
         }
     },
 
+    // Custom Badges (Overrides Discord API badges)
+    customBadges: [
+        "https://upload.wikimedia.org/wikipedia/commons/b/b5/Discord_Active_Developer_Badge.svg",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Discord_Partner_Server_Owner_Badge.svg/640px-Discord_Partner_Server_Owner_Badge.svg.png",
+    ],
+    badgeStyle: {
+        size: 24, // px
+        opacity: 100, // 0-100 %
+        gap: 8, // px
+    },
+
     // Links: label, icon (from lucide-react), url
+    // Links: label, icon (from lucide-react), url
+    // Links: label, iconUrl (image path), url
     socials: [
-        { label: "Github", href: "https://github.com/your-username" },
-        { label: "Discord", href: "https://discord.com/users/1213822891448209478" },
-        { label: "instagram", href: "https://instagram.com/your-username" },
-        { label: "website", href: "https://your-website.com" },
+        { label: "Github", iconUrl: "https://simpleicons.org/icons/github.svg", href: "https://github.com/your-username" },
+        { label: "Discord", iconUrl: "https://simpleicons.org/icons/discord.svg", href: "https://discord.com/users/1213822891448209478" },
+        { label: "Instagram", iconUrl: "https://simpleicons.org/icons/instagram.svg", href: "https://instagram.com/your-username" },
+        { label: "Website", iconUrl: "https://simpleicons.org/icons/googlechrome.svg", href: "https://your-website.com" },
     ],
 
     // Background media
