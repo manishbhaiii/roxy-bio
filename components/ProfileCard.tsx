@@ -107,39 +107,8 @@ const hexToRgb = (hex: string) => {
     return `${r}, ${g}, ${b}`;
 };
 
-// Social Icon Map
-const SOCIAL_ICONS: Record<string, any> = {
-    "Github": Github,
-    "Discord": LinkIcon, // Using Link as Discord icon fallback or we can use specific if we had it but Lucide doesn't have Discord. Usually people use FaDiscord from react-icons/fa. But user said "lucide-react". We'll stick to generic or Link for unavailable. 
-    // Actually, Lucide doesn't have brand icons like Discord/Spotify usually? 
-    // Wait, previous code used <Music> for Spotify.
-    "Spotify": Music,
-    "Instagram": Instagram,
-    "Twitter": Twitter,
-    "Youtube": Youtube,
-    "Twitch": Twitch,
-    "Mail": Mail,
-    "Globe": Globe,
-    "Website": Globe,
-    "Cloud": Cloud,
-    "Link": LinkIcon
-};
-
-// Badge Icon Mapping (Using standard names from API)
-// Using a reliable source for SVG badges or falling back to text
-const BADGE_ICONS: Record<string, string> = {
-    "hypesquad_brilliance": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_brilliance.svg",
-    "hypesquad_bravery": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_bravery.svg",
-    "hypesquad_balance": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/hypesquad_balance.svg",
-    "staff": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/staff.svg",
-    "partner": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/partner.svg",
-    "certified_moderator": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/certified_moderator.svg",
-    "verified_developer": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/verified_developer.svg",
-    "active_developer": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/active_developer.svg",
-    "early_supporter": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/early_supporter.svg",
-    "nitro": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/nitro.svg",
-    "boost": "https://raw.githubusercontent.com/rniss/discord-badges/main/assets/badges/boost.svg", // Generic boost, API usually gives specific level
-};
+// Social Icon Map - Removed as we use iconUrl from config now
+// Badge Icon Mapping - Removed as we use customBadges from config now
 
 export default function ProfileCard({ data, loading }: ProfileCardProps) {
     const [views, setViews] = useState(0);

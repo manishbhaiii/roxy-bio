@@ -33,7 +33,7 @@ export default function Home() {
     // Effect: "!" ... "!" -> "i" -> "t" ...
     // The user asked for Typing animation: "@" -> "@i" -> "@it" ... -> "@its manish" -> wait -> delete one by one.
 
-    const originalTitle = "Link in Bio";
+    // const originalTitle = "Link in Bio"; // Not used
     const targetTitle = `@${data.username}`; // Using username as display name logic
     let currentIndex = 0;
     let isDeleting = false;
