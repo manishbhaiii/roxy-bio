@@ -6,12 +6,24 @@ import ProfileCard, { DiscordData } from "@/components/ProfileCard";
 import { config } from "@/config";
 import { Volume2, VolumeX } from "lucide-react";
 
+// Helper: Convert Hex to RGB for manual opacity
+const hexToRgb = (hex: string) => {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 8) hex = hex.substring(0, 6);
+  if (hex.length === 3) hex = hex.split('').map(char => char + char).join('');
+  const bigint = parseInt(hex, 16);
+  if (isNaN(bigint)) return '255, 255, 255';
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `${r}, ${g}, ${b}`;
+};
+
 export default function Home() {
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [data, setData] = useState<DiscordData | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [bgMuted, setBgMuted] = useState(false);
-  const [isFeaturedAudioPlaying, setIsFeaturedAudioPlaying] = useState(false);
 
   // Dynamic Title Logic
   useEffect(() => {
@@ -42,7 +54,6 @@ export default function Home() {
       } else {
         // Deleting
         if (currentIndex >= 1) { // Stop at '@' or empty? User said "@ stop ho jaye" meaning wait at @?
-          // User: "ek ek karke remove ... h remove ... s remove ... @ per stop ho jaye and fir se likhna suru kar de"
           // So delete until 1 char is left ('@')
           document.title = targetTitle.substring(0, currentIndex);
           currentIndex--;
@@ -100,14 +111,10 @@ export default function Home() {
     if (!videoRef.current) return;
     if (overlayVisible) return;
 
-    if (isFeaturedAudioPlaying) {
-      videoRef.current.muted = true;
-    } else {
-      if (!bgMuted) {
-        videoRef.current.muted = false;
-      }
+    if (!bgMuted) {
+      videoRef.current.muted = false;
     }
-  }, [isFeaturedAudioPlaying, overlayVisible, bgMuted]);
+  }, [overlayVisible, bgMuted]);
 
   const toggleBgMute = () => {
     setBgMuted(!bgMuted);
@@ -115,6 +122,18 @@ export default function Home() {
       videoRef.current.muted = !bgMuted;
     }
   };
+
+  // Disable Right Click
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    document.addEventListener("contextmenu", handleContextMenu);
+    return () => document.removeEventListener("contextmenu", handleContextMenu);
+  }, []);
+
+  // Prepare RGB for button style
+  const themeRgb = hexToRgb(config.themeColor || '#ffffff');
 
   return (
     <main className="relative min-h-screen w-full bg-black text-white overflow-hidden">
@@ -145,10 +164,19 @@ export default function Home() {
       {!overlayVisible && (
         <button
           onClick={toggleBgMute}
-          className="fixed top-4 right-4 z-50 p-3 bg-black/50 backdrop-blur-md rounded-full border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
-          style={{ color: config.themeColor, borderColor: config.themeColor }}
+          className="fixed top-8 right-8 z-50 p-3 backdrop-blur-md rounded-2xl transition-all duration-500 cursor-pointer hover:scale-110 active:scale-95 group"
+          style={{
+            backgroundColor: `rgba(${themeRgb}, 0.25)`, // Colored blur background
+            border: `2px solid ${config.themeColor}`,
+            boxShadow: `0 0 20px ${config.themeColor}40`,
+            color: config.themeColor
+          }}
         >
-          {bgMuted || isFeaturedAudioPlaying ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          {bgMuted ? (
+            <VolumeX className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+          ) : (
+            <Volume2 className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+          )}
         </button>
       )}
 
@@ -161,8 +189,6 @@ export default function Home() {
           <ProfileCard
             data={data}
             loading={!data}
-            featuredAudioUrl={config.audio?.url}
-            onAudioPlayHelper={setIsFeaturedAudioPlaying}
           />
         </div>
       )}

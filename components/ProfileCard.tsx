@@ -360,7 +360,7 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                         {validActivities.map((act, index) => (
                             <div
                                 key={index + act.name}
-                                className="w-full p-3 flex items-center gap-3 relative"
+                                className="w-full p-3 flex items-center gap-4 relative"
                             >
                                 {/* Middle: Text Info */}
                                 <div className="flex-1 min-w-0 flex flex-col justify-center pl-4">
@@ -378,12 +378,12 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                                 </div>
 
                                 {/* Right: Large Activity Image */}
-                                <div className="relative w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-black/50">
+                                <div className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-black/50 mr-2">
                                     {getActivityImage(act) ? (
                                         <img src={getActivityImage(act)!} alt="Activity" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center">
-                                            <Gamepad2 className="w-6 h-6 text-white/50" />
+                                            <Gamepad2 className="w-8 h-8 text-white/50" />
                                         </div>
                                     )}
                                 </div>
