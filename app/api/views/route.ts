@@ -1,43 +1,41 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { config } from '@/config';
 
-const dataFilePath = path.join(process.cwd(), 'views.json');
-
-// In-memory fallback if file system is read-only (for Vercel)
-let inMemoryViews = 0;
-
-function getViews() {
-    try {
-        if (fs.existsSync(dataFilePath)) {
-            const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
-            const data = JSON.parse(fileContent);
-            return data.views || 0;
-        }
-    } catch (e) {
-        console.error("Error reading views file:", e);
-    }
-    return inMemoryViews;
-}
-
-function saveViews(views: number) {
-    try {
-        fs.writeFileSync(dataFilePath, JSON.stringify({ views }));
-    } catch (e) {
-        // Vercel is read-only, so this will fail. We just log it and update in-memory.
-        console.warn("Could not write to file system (likely read-only environment). Using in-memory store.");
-        inMemoryViews = views;
-    }
-}
+// Use Discord ID to create a unique namespace for this specific user
+const NAMESPACE = `roxy-bio-${config.discordId || 'default'}`;
+const KEY = 'views';
 
 export async function GET() {
-    const views = getViews();
-    return NextResponse.json({ views });
+    try {
+        // Try to get current count
+        const res = await fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${KEY}`);
+        if (!res.ok) {
+            // New counter or network issue
+            return NextResponse.json({ views: 0 });
+        }
+        const data = await res.json();
+        return NextResponse.json({ views: data.value || 0 });
+    } catch (e) {
+        console.error("Counter API Error:", e);
+        return NextResponse.json({ views: 0 });
+    }
 }
 
 export async function POST() {
-    let views = getViews();
-    views++;
-    saveViews(views);
-    return NextResponse.json({ views });
+    try {
+        // Increment count
+        const res = await fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${KEY}`);
+
+        if (!res.ok) {
+            // If key doesn't exist, we might need to create it, but 'hit' usually works or we can fallback
+            return NextResponse.json({ views: 1 });
+        }
+
+        const data = await res.json();
+        return NextResponse.json({ views: data.value || 0 });
+    } catch (e) {
+        console.error("Counter API Error:", e);
+        // Fallback to 1 locally if API fails, so UI shows something
+        return NextResponse.json({ views: 1 });
+    }
 }

@@ -111,6 +111,7 @@ const hexToRgb = (hex: string) => {
 // Badge Icon Mapping - Removed as we use customBadges from config now
 
 export default function ProfileCard({ data, loading }: ProfileCardProps) {
+    /* View Counter Disabled for now
     const [views, setViews] = useState(0);
 
     useEffect(() => {
@@ -126,6 +127,7 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
         };
         updateViews();
     }, []);
+    */
 
     if (loading || !data) {
         return (
@@ -224,11 +226,13 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
             className="p-8 w-[550px] max-w-full backdrop-blur-xl rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col items-center gap-6"
             style={mainCardStyle}
         >
-            {/* View Counter - Bottom Left */}
+            {/* View Counter - Bottom Left (DISABLED) */}
+            {/* 
             <div className="absolute bottom-6 left-8 flex items-center gap-2 text-sm font-bold opacity-80 z-20">
                 <Eye className="w-4 h-4" style={{ color: config.themeColor }} />
                 <span style={{ color: config.themeColor }}>{views}</span>
-            </div>
+            </div> 
+            */}
 
             {/* Profile Section */}
             <div className="flex flex-col items-center w-full z-10 relative mt-2">
