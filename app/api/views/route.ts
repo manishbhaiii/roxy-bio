@@ -4,6 +4,9 @@ import path from 'path';
 
 const dataFilePath = path.join(process.cwd(), 'views.json');
 
+// In-memory fallback if file system is read-only (for Vercel)
+let inMemoryViews = 0;
+
 function getViews() {
     try {
         if (fs.existsSync(dataFilePath)) {
@@ -14,14 +17,16 @@ function getViews() {
     } catch (e) {
         console.error("Error reading views file:", e);
     }
-    return 0;
+    return inMemoryViews;
 }
 
 function saveViews(views: number) {
     try {
         fs.writeFileSync(dataFilePath, JSON.stringify({ views }));
     } catch (e) {
-        console.error("Error writing views file:", e);
+        // Vercel is read-only, so this will fail. We just log it and update in-memory.
+        console.warn("Could not write to file system (likely read-only environment). Using in-memory store.");
+        inMemoryViews = views;
     }
 }
 
