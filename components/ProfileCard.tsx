@@ -158,6 +158,8 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
 
     const fixDiscordUrl = (url: string | undefined) => {
         if (!url) return null;
+
+        // Handle mp:attachments
         if (url.includes("mp:attachments/")) {
             const parts = url.split("mp:attachments/");
             if (parts.length > 1) {
@@ -168,17 +170,48 @@ export default function ProfileCard({ data, loading }: ProfileCardProps) {
                 return fixed;
             }
         }
+
+        // Handle mp:external
+        // Example: https://cdn.../mp:external/<HASH>/https/pd.premid.app/iDBJbrtn6P.png.png
+        // We want: https://pd.premid.app/iDBJbrtn6P.png
+        if (url.includes("mp:external/")) {
+            // Split by rules we see common in Discord proxies
+            // Usually it's mp:external/<BASE64_HASH>/<PROTOCOL>/<DOMAIN>/<PATH>
+
+            // Try to find the start of the real protocol (https/ or http/)
+            const protocols = ["https/", "http/"];
+            for (const proto of protocols) {
+                const idx = url.indexOf(proto);
+                if (idx !== -1) {
+                    // Extract everything after https/
+                    let realUrl = url.substring(idx);
+                    // Replace the first slash after https to make it https://
+                    realUrl = realUrl.replace(proto, proto.replace("/", "://"));
+
+                    // Fix double extensions sometimes appended by Discord proxy (e.g. .png.png)
+                    if (realUrl.endsWith(".png.png")) realUrl = realUrl.slice(0, -4);
+                    if (realUrl.endsWith(".jpg.jpg")) realUrl = realUrl.slice(0, -4);
+                    if (realUrl.endsWith(".gif.gif")) realUrl = realUrl.slice(0, -4);
+                    if (realUrl.endsWith(".webp.webp")) realUrl = realUrl.slice(0, -5);
+
+                    return realUrl;
+                }
+            }
+        }
+
         return url;
     };
 
     const getActivityImage = (activity: Activity) => {
         if (activity.spotify?.albumArt) return activity.spotify.albumArt;
+
         if (activity.assets?.largeImage) {
             if (activity.assets.largeImage.startsWith("spotify:")) {
                 const artId = activity.assets.largeImage.replace("spotify:", "");
                 return `https://i.scdn.co/image/${artId}`;
             }
-            if (activity.assets.largeImage.startsWith("http")) {
+
+            if (activity.assets.largeImage.startsWith("http") || activity.assets.largeImage.startsWith("mp:")) {
                 return fixDiscordUrl(activity.assets.largeImage);
             }
         }
